@@ -1,0 +1,12 @@
+name: lazy-load
+title: lazy-load
+username:
+account: dtkaplan
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3743829
+bundleId: 4306329
+url: https://dtkaplan.shinyapps.io/lazy-load/
+when: 1614973713.99658
+asMultiple: FALSE
+asStatic: FALSE

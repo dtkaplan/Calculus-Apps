@@ -1,0 +1,63 @@
+---
+title: "Sums of sinusoids"
+author: "Daniel Kaplan"
+date: "7/31/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+A1  <- sliderInput("A1", "Oscillator 1", 
+                   min=0,  max=2, value  = 1, step  = 0.1)
+A2  <- sliderInput("A2", "Oscillator 2", min=0,  max=2, value  = 0,
+                   step = 0.1)
+P1  <- sliderInput("P1", "",  
+                   min=0.5, max = 5, value = 2, step=0.1)
+P2  <- sliderInput("P2", "",  
+                   min=0.5, max = 5, value = 2, step=0.1)
+phi1 <- sliderInput("phi1", "", 
+                    min = 0, max = 2*pi, value  = 0, step = 0.01)
+phi2 <- sliderInput("phi2", "", 
+                    min = 0, max = 2*pi, value  = 0, step = 0.01)
+
+```
+
+Color    | Amplitude | Period | Phase
+---------|-----------|--------|--------
+Blue    | `r A1`    | `r P1` | `r phi1`
+Green   | `r A2`    | `r P2` | `r phi2`
+
+
+`r sliderInput("baseline", "Baseline", min=-2, max = 2, value=0, step=0.01)`
+
+`r  plotOutput("main_plot")`
+
+
+```{r echo=FALSE}
+timebase <- reactive({
+  seq(0,20, length = 500)
+})
+
+waveforms <- reactive({
+  res <- data.frame(
+    time = timebase() ,
+    first  = input$A1*sin(2*pi*timebase()/input$P1 + input$phi1),
+    second = input$A2*sin(2*pi*timebase()/input$P2 + input$phi2)
+  ) 
+  
+  res$sum <-  res$first + res$second + input$baseline
+  
+  res
+})
+
+
+output$main_plot <- renderPlot({
+  ggplot(data = waveforms(), aes(x = time, y = sum)) +
+    geom_line(color = "black", size = 3, alpha = 0.25)  +
+    geom_line(aes(y = first), color = "blue") +
+    geom_line(aes(y  = second), color = "green")  +
+    ylim(-4,  4)
+})
+

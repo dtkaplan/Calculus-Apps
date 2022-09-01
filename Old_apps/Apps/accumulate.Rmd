@@ -1,0 +1,128 @@
+---
+title: "Euler accumulation"
+date: "MMM DD YYYY"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r include=FALSE}
+library(gradethis)
+library(etude2)
+library(shiny)
+library(mosaic)
+library(mosaicCalc)
+knitr::opts_chunk$set(echo = FALSE)
+learnr::tutorial_options(exercise.timelimit = 60,
+                 exercise.checker = gradethis::grade_learnr)
+```
+
+```{r context="setup"}
+library(mosaic)
+library(mosaicCalc)
+draw_accum <- function(fun, domain=list(x=c(-3,3)), h=0.1,
+                       n=11, alpha = 1, hshift=0, 
+                       accumgraph = TRUE, Fgraph=TRUE, C=0) {
+  
+  if (inherits(fun, "formula")) fun <- makeFun(fun)
+  Fun <- mosaicCalc::antiD(fun(x) ~ x)
+  xrange <- domain[[1]]
+  xwidth <- h
+  f_data <- tibble::tibble(
+    xpts = seq(xrange[1], xrange[2], by=h) + 
+      hshift * xwidth,
+    xstart = xpts,
+    xend = xpts + h,
+    slope = fun(xpts),
+    scaled_slope = (slope - min(slope)) / diff(range(slope)), # on [0,1] scale
+    ystart = 0, 
+    yend = slope*xwidth,
+    move_vertical = c(0,cumsum(yend[-length(yend)])),
+    hue = hsv(.1 + 4*scaled_slope/5, 1, 1),
+    ystart2 = alpha*move_vertical + C,
+    yend2 = alpha*move_vertical + xwidth*slope + C,
+    midpoint = ystart2
+  )
+
+  dom <- domain(x=xrange)
+  
+  if (accumgraph) {
+    P <- NULL
+    P <- slice_plot(Fun(x) ~ x, dom, 
+                    color=ifelse(Fgraph, "gray", NA),
+                    alpha=Fgraph)  
+    P %>%  
+      gf_point(data = f_data, midpoint ~ xpts, color = ~ hue) %>%
+      gf_segment(data = f_data, ystart2 + yend2 ~ xstart + xend,
+                      color = ~ hue, size=2) %>%
+      gf_refine(scale_colour_identity()) %>%
+      gf_labs(y = "F(x) and accumulated slopes", x="x")
+  } else {
+    slice_plot(fun(x) ~ x, dom) %>%
+      gf_point(data = f_data, slope ~ xpts, color = ~ hue, size=2) %>%
+      gf_refine(scale_colour_identity()) %>%
+      gf_labs(y="f(x) -- the slope of F(x)")
+  } 
+
+}
+```
+
+The tilde expression that you type in the box defines a function $f(x)$ which is displayed in the BOTTOM graph.
+
+
+`r textInput("tilde", "Tilde expression for f(x)", value = "exp(1.5*x) ~ x", width="30%")`
+
+The top graph shows $F(x) \equiv \int f(x) dx$. The $F(x)$ function  is drawnn as a light gray line because we want you mostly to ignore it. $F(x)$ will be what we try to construct using the Euler method with just the information provided by $f(x)$. 
+
+The Euler method applies over a defined domain $a \leq x \leq b$ which you can set with the slider. Euler also uses a step-size $h$ which you can choose with the drop-down menu. Keep $h$ large until you understand how $f(x)$ is used to draw the colorful segments drawn in the top graph.
+
+`r sliderInput("domain", "Domain for plot", min=-10, max=10, value=c(0,3), step = 0.5, width="200px")`   `r selectInput("h", "h", choices=c(0.01,0.05,0.1, 0.25, 0.5), selected=0.25, width="20%")`
+
+
+From $a$ and $h$, a series of discrete values $x_i = a + i h$ is constructed and $f(x)$ is evaluated at each of those discrete values. This is shown graphically in the BOTTOM plot, with each dot positioned at the coordinates $(x_i, f(x_i))$. In the plot, color is also used to show $f(x_i)$ so that you'll be able to associate each $f(x_i)$ value with the corresponding segment in the TOP plot.
+
+Recall that $f(x)$ is the slope of the anti-derivative function $F(x)$ that we're going to find using Euler's method. In the top graph, those slopes---the information that we have from the dots in the bottom graph---are drawn as little segments.  But the little segments are disconnected. 
+
+To assemble the segments into a continuous function, we move each sloped segment vertically (without changing the slope) to start at the end-point of the previous segment. You could do this one segment after the other, like stacking toy blocks into a tower. We've given you a slider that lets you gradually move the segments toward the connected whole.
+
+
+```{r context="server"}
+fun <- reactive({
+  ff <- as.formula(input$tilde)
+  makeFun(ff)
+})
+output$fx <- renderPlot({
+  draw_accum(fun(), h = as.numeric(input$h), 
+             domain = list(x=input$domain),
+             accumgraph=FALSE, Fgraph = TRUE, alpha = 0)
+})
+output$segments <- renderPlot({
+  draw_accum(fun(), h = as.numeric(input$h), 
+             domain = list(x=input$domain),
+             accumgraph=TRUE, Fgraph = TRUE, 
+             alpha = input$alpha, 
+             C = input$C) 
+})
+```
+
+```{r}
+plotOutput("segments")
+```
+
+```{r}
+plotOutput("fx")
+```
+
+
+`r sliderInput("alpha", "Move toward 1 to connect the segments together:", min=0, max=1, value = 0, width="200px")`
+`r sliderInput("C", "Constant of integration, C", min=-10, max=10, value=0, width="200px")`
+
+
+
+
+The Euler approximation to $F(x)$ gets better as the step size $h$ gets smaller.
+
+
+
+
+
+

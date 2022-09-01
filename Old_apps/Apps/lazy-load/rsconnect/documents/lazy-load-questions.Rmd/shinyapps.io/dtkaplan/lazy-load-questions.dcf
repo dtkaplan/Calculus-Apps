@@ -1,0 +1,13 @@
+name: lazy-load-questions
+title: lazy-load-questions
+username:
+account: dtkaplan
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3743980
+bundleId: 4306581
+url: https://dtkaplan.shinyapps.io/lazy-load-questions/
+when: 1614977318.45045
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: lazy-load.html|mother.html|mother.Rmd

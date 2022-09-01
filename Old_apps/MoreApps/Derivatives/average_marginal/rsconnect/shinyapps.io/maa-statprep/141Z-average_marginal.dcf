@@ -1,0 +1,12 @@
+name: 141Z-average_marginal
+title: 141Z-average_marginal
+username:
+account: maa-statprep
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2872949
+bundleId: 3663535
+url: https://maa-statprep.shinyapps.io/141Z-average_marginal/
+when: 1600895865.84373
+asMultiple: FALSE
+asStatic: FALSE

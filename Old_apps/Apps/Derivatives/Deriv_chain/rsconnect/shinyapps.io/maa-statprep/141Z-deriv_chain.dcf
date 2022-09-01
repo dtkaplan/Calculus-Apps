@@ -1,0 +1,12 @@
+name: 141Z-deriv_chain
+title: 141Z-deriv_chain
+username:
+account: maa-statprep
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2871496
+bundleId: 3663002
+url: https://maa-statprep.shinyapps.io/141Z-deriv_chain/
+when: 1600886087.526
+asMultiple: FALSE
+asStatic: FALSE

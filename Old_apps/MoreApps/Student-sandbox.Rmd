@@ -1,0 +1,287 @@
+---
+title: "R Sandbox for 141Z"
+output: learnr::tutorial
+runtime: shiny_prerendered
+---
+
+```{r setup, include=FALSE}
+library(learnr)
+knitr::opts_chunk$set(echo = FALSE)
+library(mosaic)
+library(mosaicCalc)
+library(ggformula)
+library(math141Z)
+library(MMAC)
+library(NHANES)
+library(mosaicData)
+library(etude)
+library(learnr)
+library(gradethis)
+library(submitr)
+library(learnrhash)
+library(DT)
+library(plotly)
+library(broom)
+
+learnr::tutorial_options(exercise.timelimit = 60,
+                         exercise.lines = 10,
+                 exercise.checker = gradethis::grade_learnr)
+library(readxl)
+library(lubridate)
+
+sigmoid <- makeFun(A*pnorm(t,  center, width) ~ t)
+hump <- makeFun(A*dnorm(t, center, width) ~ t)
+slope <- function(f, delta = 1) {
+  function(t) {
+    (f(t+delta) - f(t-delta))/(2*delta)
+  }
+}
+```
+
+
+
+```{r sandbox, exercise=TRUE, exercise.lines=15, exercise.cap="Math 141Z Sandbox"}
+
+
+
+
+
+
+
+
+
+```
+
+##      
+
+
+## Using this Sandbox
+
+Based on feedback from cadets, we are providing this document which contains several R sandboxes. You can use these to do any scratch calculations for your projects or Daily Digitals.
+
+In addition  to  the  sandbox  above, there are many sections each with a new sandbox and a place to  record whatever notes  to yourself are helpful.  These sandboxes provide a place to save earlier work for later reference  or to work on more than one problem at a time. Some of those sandboxes are in  sections that have reminders about R commands commonly used in Math 141Z.
+
+In order  for  your notes and your computer code to be saved in your browser, you must **press "Run Code" or "Submit"**. You can, of course, at any time change  or delete code and notes, perhaps to re-use a sandbox.  
+
+## Getting help
+
+You should feel free to contact Prof. Kaplan for help with computer commands (or any other aspect of Math 141Z). You can  send him a message via Teams to  arrange a time. Alternatively, you can cut and paste  problematic code in a Teams message  to him. He'll take a look and might be able to  put you on  the right track.
+
+In doing this, you will be helping in  the development of  Math 141Z for future classes of cadets. The reason  is simple. It is only by hearing about the difficulties students  encounter in making sense of the course materials that we can improve the materials. 
+
+## Plots
+
+* Plotting functions
+```{r echo=TRUE}
+f <- makeFun(a*x + b ~ x, a = 1, b = -2)
+slice_plot(f(x) ~ x, domain(x = c(0, 5)))
+contour_plot(f(x) * f(y) ~ x + y, 
+             domain(x=c(-2,2), y  = c(-2, 2)),
+             contours_at  = c(1, 3, 5),
+             skip  = 0,
+             filled = FALSE)
+```
+
+* Plotting data
+
+And adding a straight-line model layer
+
+
+
+```{r echo=TRUE}
+gf_point(height ~ father, data = Galton, alpha = 0.2) %>%
+  gf_lm(confidence = TRUE)
+```
+
+* Adding labels and a log-scale vertical axis
+
+```{r  echo=TRUE, warning=FALSE}
+slice_plot(f(x) ~ x, domain(x = c(0,  5))) %>%
+  gf_labs(y = "The  y axis label",  
+          x = "A label for the horizontal axis") %>%
+  gf_refine(scale_y_log10())
+```
+
+
+## Creating new functions
+
+* Function from a formula: `makeFun()`
+
+Example:  Formula $f(x, t) \equiv 3 e^{-t/2} \sin(2\pi x/0.1)$
+
+```{r echo=TRUE}
+f <-  makeFun(3*exp(-t/2) *  sin(2*pi*x/0.1) ~ x  + t)
+```
+
+* Function from a formula fit to  data: `fitModel()`. Need a starting guess for nonlinear parameters.
+
+```{r echo=TRUE}
+temperature_fun <- 
+  fitModel(temp ~ A * exp(k * time) + C, data = CoolingWater,
+           start = list(k=-1/20))
+coef(temperature_fun)
+gf_point(temp ~ time, data  = CoolingWater,  alpha =  0.2) %>%
+  slice_plot(temperature_fun(time)  ~ time, color = "red")
+```
+
+* Smoother from data: `smoother()`
+
+```{r echo=FALSE}
+g <- smoother(mpg ~ wt,  data  = mtcars,  span=1.75)
+# span is  a fraction of the horizontal range of the data
+# longer spans give smoother functions
+gf_point(mpg ~ wt, data  = mtcars) %>%
+  slice_plot(g(wt) ~ wt, color = "red")
+```
+
+* Interpolating  functions: `spliner()` & `connector()`
+
+* Random, natural  looking functions: `rfun()`
+
+```{r echo=FALSE}
+example <- rfun(~ x,  seed = 100)
+slice_plot(example(x) ~ x, domain(x = c(-5, 5)))
+```
+
+* Derivative of a function: `D()`
+
+```{r echo=FALSE}
+example_deriv <- D(example(x)~ x)
+slice_plot(example_deriv(x) ~ x, domain(x = c(-5, 5))) %>%
+  slice_plot(example(x) ~ x, color  = "red", alpha = 0.3)
+```
+
+* Anti-derivative of a function `antiD()`
+
+```{r echo=FALSE}
+example_antiD <- antiD(example(x) ~ x)
+slice_plot(example_antiD(x) ~ x, domain(x = c(-5, 5))) %>%
+  slice_plot(example(x) ~ x, color  = "red", alpha = 0.3)
+```
+
+
+* Integrate differential equations:  `integrateODE()`
+
+
+
+
+## Building-block functions
+
+
+```{r sandbox-building-blocks, exercise=TRUE, exercise.lines=15, exercise.cap="Building block functions"}
+
+
+```
+
+- Exponential: `exp(k*t)`
+- Straight line: `m*x + b`
+- Power-law: `A*x^p`
+- Logarithmic: "natural" log base-e  `log()`, base-2 `log2()`, base-10`log10()`
+- Hump: `hump(t, A, center, width)`
+- Periodic: `sin(2*pi*t/P)`
+- Sigmoidal:`sigmoid(t, A,  center, width)`  
+
+
+## Vectors
+
+### Common commands
+
+```{r echo=FALSE}
+# pre-defining these vectors
+v <- rbind(3.1, 2.7, 15)
+
+```
+
+- Make a column vector named `v`:  `v <- rbind(3.1, 2.7, 15)`
+- Make a row vector named `w`:  `w <- cbind(1.7, 2, 5, 4.3)`
+- Turn  `v` from a column vector  into a  row vector: `t(v)`
+- Turn `w` from a row vector into a column vector: `t(w)`
+- Dot product of two column vectors: `t(u) %*% v`
+- Square length  of a column vector: `t(v) %*% v`
+- Length of a column vector:  `sqrt(t(v) %*% v)`
+- **Projection** of a column vector `v` onto a column vector named `D`
+```{r echo = TRUE}
+D <- rbind(6,  0,  3) # given
+c((t(v) %*% D) / (t(D) %*% D)) * D
+```
+(Note  the  use  of `c()`. Here, this changes a 1x1 matrix into  what R recognizes as a scalar.)
+
+- **Residual** from a column vector `v` projected onto a column vector named `D`
+```{r echo = TRUE}
+v  - c((t(v) %*% D) / (t(D) %*% D)) * D
+```
+- Make a matrix with two columns (and 3 rows):
+```{r echo=TRUE}
+M <- cbind(rbind(1,2,6), rbind(7, 3, 9))
+```
+```{r echo=FALSE}
+M
+```
+- Solve ${\mathbf M} \cdot  \vec{\mathbf x}  = \vec{\mathbf b}$ for $\vec{\mathbf b}$ when  $\vec{\mathbf x}$ is given:
+```{r echo=TRUE}
+x <- rbind(3, 2)  # x given, b unknown
+M %*% x
+```
+- Knowing  $\vec{\mathbf b}$ (but not $\vec{\mathbf x}$!),  solve ${\mathbf M} \cdot  \vec{\mathbf x}  = \vec{\mathbf b}$ for $\vec{\mathbf x}$:
+```{r}
+b  <- rbind(17, 12,  36) # b given,  x  unknown
+qr.solve(M, b)
+```
+
+Note: The textbook  uses `solve()` instead of `qr.solve()`. You  should use `qr.solve()`.
+    
+## Sandbox B
+
+
+```{r example1, exercise=TRUE, exercise.lines=15, exercise.cap="Sandbox B"}
+
+
+```
+
+```{r sandboxB-notes, echo=FALSE}
+etude::essay_response(
+  prompt = "Your notes here."
+)
+```
+
+## Sandbox C
+
+```{r example2, exercise=TRUE, exercise.lines=15, exercise.cap="Sandbox C"}
+
+
+```
+
+```{r sandboxC-notes, echo=FALSE}
+etude::essay_response(
+  prompt = "Your notes here."
+)
+```
+
+
+## Sandbox D
+
+```{r sandboxD, exercise=TRUE, exercise.lines=15, exercise.cap="Example 3"}
+
+
+```
+
+```{r sandboxD-notes, echo=FALSE}
+etude::essay_response(
+  prompt = "Your notes here."
+)
+```
+
+
+
+## Sandbox E
+
+```{r sandboxE, exercise=TRUE, exercise.lines=15, exercise.cap="Example 4"}
+
+
+```
+
+```{r sandboxE-notes, echo=FALSE}
+etude::essay_response(
+  prompt = "Your notes here."
+)
+```

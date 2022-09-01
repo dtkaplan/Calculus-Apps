@@ -1,0 +1,105 @@
+---
+title: "Force-balance dynamics"
+author: "Daniel Kaplan"
+runtime: shiny
+---
+
+```{r include=FALSE}
+library(mosaic)
+library(ggformula)
+library(mosaicCalc)
+```
+
+Force-balance dynamics are those reflecting Newton's Second Law of Motion ($F = ma = m\, \partial_{tt} x$). We're going to work with systems where the force itself is a simple function of $x$ and $\partial_t x$:
+$$m\, \partial_{tt} x = -b x - a \partial_t x$$ where $a$ and $b$ are constants. The negative sign before the $k$ is a convention that let's positive $a$ and positive $b$ correspond to the physical system of a damped spring, but has no further significance.
+
+Again, motivated by the observed motion of a spring-mass system, we'll check whether solutions of the simple form $x(t) \equiv e^{-kt}\, \sin(\omega t)$ will satisfy the equation. The graph shows the three functions $x(t)$, $\partial_t x(t)$, and $\partial_{tt} x(t)$ for whatever choice you make of $a/m$ and $b/m$.
+
+`r plotOutput("xgraph", height="200px", brush="crosshair")`
+
+`r sliderInput("k", "k", min = -2, max=0, value=-0.5, step = 0.01)`
+`r sliderInput("omega", "omega", min = 2, max=2.5, value=1, step = 0.001)`
+
+`r plotOutput("difference", height="200px")`
+
+`r plotOutput("forced", height="200px")`
+
+`r plotOutput("phase", height="200px")`
+
+```{r}
+f <- reactive({
+  omega <- input$omega
+  k <- input$k
+  function(t) exp(k*t) * sin(omega*t)
+})
+df <- reactive({
+  mosaicCalc::D(f()(t) ~ t)
+})
+ddf <- reactive({
+  mosaicCalc::D(f()(t) ~ t + t)
+})
+
+ff <- reactive({
+  omega <- input$omega
+  function(t) sin(omega*t)
+})
+dff <- reactive({
+  mosaicCalc::D(ff()(t) ~ t)
+})
+ddff <- reactive({
+  mosaicCalc::D(ff()(t) ~ t + t)
+})
+
+
+output$xgraph <- renderPlot({
+  x <- f()
+  dx <- df()
+  ddx <- ddf()
+  ## Figuring out a and b from k and omega
+  sum <- function(t) ddx(t) - 2*input$k* dx(t) + 
+    ((input$k)^2 + (input$omega)^2) * x(t)
+  
+  slice_plot(sum(t) ~ t, color="green", size=2, domain(t=c(0,15))) %>%
+    slice_plot(dx(t) ~ t, color = "red") %>%
+    slice_plot(ddx(t) ~ t, color = "blue") %>%
+    slice_plot(x(t) ~ t)
+})
+
+output$difference <- renderPlot({
+  x <- f()
+  dx <- df()
+  ddx <- ddf()
+  slice_plot(ddx(t) + 5*x(t) + dx(t) ~ t, domain(t=c(0,15)))
+})
+
+output$forced <- renderPlot({
+  ddx <- ddff()
+  dx <- dff()
+  x <- ff()
+  slice_plot((ddx(t) + 5*x(t) + .02*dx(t)) ~ t, domain(t=c(0,15)))
+})
+
+output$phase <- renderPlot({
+  slice_plot(180*atan2(omega*0.02, (5 - omega^2))/pi ~ omega, domain(omega=sqrt(5)*c(.95, 1.05)))
+})
+```
+
+```{r}
+amplitude <- function(omega, b, c) {
+  1/sqrt((c-omega^2)^2 + omega^2*b^2)
+}
+slice_plot(amplitude(omega, b=.01, c=5) ~ omega, domain(omega=c(.3, 3)))
+```
+
+
+
+
+A solution to the dynamics will be a function $x(t)$ that satisfies the force-balance dynamics. Again, motivated by the motion of a damped spring, 
+
+It's very common for the force on an object to be a function of the object's position $y$ and it's velocity $v = \partial_t y$. For instance, in a spring-mass system, the force exerted by the spring depends on the spring's extension. There's also a force of air resistance or internal friction in the spring material. We'll write the net force as $F(y, v) \equiv F(y, \partial_t y)$.
+
+Like all continuous functions, $F(y, v)$ can be approximated locally by a  first-order polynomial: $$F(y, v) = a +  b y + c v$$ To simplify things even more, let's measure position not directly with $y$ but with $x \equiv y + a/b$. Rewriting the definition for $F()$ in terms of $x$ gives $$F(x, v) = b x + c v$$
+
+Newton's Second Law of motion (F = ma) implies that $$m \partial_{{tt}} x = F(x, v)
+
+x + ystar = y 

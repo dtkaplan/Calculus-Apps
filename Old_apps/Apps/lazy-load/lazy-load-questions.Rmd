@@ -1,0 +1,44 @@
+---
+pagetitle: "First attempt"
+runtime: shiny_prerendered
+output: html_document
+---
+
+
+```{r include=FALSE}
+etude2::load_learnr_safely()
+library(etude2)
+```
+
+
+##  {.tabset}
+
+### Problem One
+
+I don't think I need to use the `{learnr}` prompt. Why not just use regular text?
+```{r first, echo=FALSE, results="markup"}
+etude2::etudeQ(
+  "",
+  "Wow" = "Upside down",
+  "+Mom+"= "That's always the right question!",
+  "Mow" = "Simply wrong",
+  "Wom" = "Wrong in so many ways!"
+)
+```
+
+### Problem Two
+
+<div style="width: 400px; padding-left: 80px;">
+
+```{r second, echo=FALSE, results="markup"}
+etude2::etudeQ(
+  "Another question entirely?",
+  "Wow" = "Upside down",
+  "+Mom+"= "That's always the right question!",
+  "Mow" = "Simply wrong",
+  "Wom" = "Wrong in so many ways!"
+)
+```
+
+</div>
+

@@ -1,0 +1,99 @@
+---
+title: "Manipulating NACA parameters"
+author: "Daniel Kaplan"
+date: "7/24/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mosaic)
+library(mosaicCalc)
+library(ggformula)
+```
+
+The NACA 4-digit airfoil framework involves three inputs:
+
+- $x$ which measures the front-back position from 0 up front to 1 at the back.
+- $h$ the maximum thickness of the airfoil
+- $p$ the front-back position of the highest point of the camber line
+- $m$ the height of the highest point of the camber line
+
+For any one airfoil, we fix $h$, $p$, and $m$ at some numerical value and plot out the camber line $y_c(x)$ as a function of $x$. We would also draw the curves of the top and bottom of the airfoil, which are found by adding or subtracting the thickness from the camber line. (The addition is done *perpendicularly* to the camber line, not straight up and down.)
+
+$$ y_c(x) \equiv \left\{
+\begin{array}{lc}\frac{m}{p^2}(2 p x - x^2) & 0 \leq x < p\\
+\frac{m}{(1-p)^2} (1 - 2 p + 2 p x - x^2)& p \leq x \leq 1\end{array} \right.$$
+
+## A computer implementation of the camber line
+
+We will plot $y_c(x)$ versus $x$ for any selected value for $h$, $p$, and $m$. 
+
+`r sliderInput('p', 'Parameter p', min = 0, max = 1, value = 0.4 )`
+
+`r sliderInput('m', "Parameter m", min = 0, max = 0.2, value = 0.05)`
+
+`r sliderInput('h', "Parameter h", min =0, max = 0.5, value = .2)`
+
+`r plotOutput("camber_plot")`
+
+
+```{r echo=FALSE}
+camber_front <- makeFun(
+  m * (2*p*x - x^2)/(p^2) ~ x + m + p)
+dcamber <- makeFun(
+  ifelse(x < p, 
+         2*m*(p-x)/(p^2),
+         2*m*(p-x)/((1-p)^2)) ~ x + m + p)
+  
+camber_back <- makeFun(
+  m * (1 - 2*p + 2*p*x - x^2)/((1-p)^2) ~ x + m + p)
+thickness <- makeFun(
+  5 * h * (0.2969*sqrt(x) - 0.126*x - 0.3516*x^2 + 0.2843*x^3 +
+         -0.1036 * x^4) ~ x + h)
+camber <- 
+  makeFun(ifelse(x < p, 
+                 camber_front(x, m=m, p=p), 
+                 camber_back(x, m=m, p=p)) ~ x + m + p)
+```
+
+
+```{r echo=FALSE}
+output$camber_plot <- renderPlot({
+  m <- input$m
+  p <- input$p
+  h <- input$h
+  camber_fun <- makeFun(camber(x, m = m, p = p) ~ x)
+  
+  x <- (1 - cos(seq(0, pi, length=200)))/ 2
+  yc <- camber(x, m = m, p = p)
+  dyc <- dcamber(x, m = m, p = p)
+  yt <- thickness(x, h = h)
+  theta <- atan(dyc)
+  Airfoil <- data.frame(
+    xpos = x,
+    xtop = x + yt * sin(theta),
+    ytop = yc + yt * cos(theta),
+    xbottom = x - yt * sin(theta),
+    ybottom = yc - yt * cos(theta)
+  )
+  
+  slice_plot(camber_fun(x) ~ x, domain(x = c(0, 1)), 
+             npts = 300, color = "orange") %>%
+    gf_line(ytop ~ xtop, data = Airfoil) %>%
+    gf_line(ybottom ~ xbottom, data = Airfoil) %>%
+    gf_lims(y = c(-.5, .5))
+})
+```
+
+## The domain of the function
+
+The airfoil-shape function has a valid output (that is, one that is legitimately an airfoil), only for $0 \leq x \leq 1$ and for some regions of the $(m, p, h)$ parameter space.
+
+Play around with the sliders to find the boundary of the domain in $(m, p, h)$ space. Give a few examples of points on the boundary.
+
+## For later in the course
+
+1. Finding the angle of the thickness by differentiating the camber line with respect to x.
+2. Does the partial effect of $p$ depend on $m$? (Yes, since when $m=0$, $p$ has no effect.)

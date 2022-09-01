@@ -1,0 +1,139 @@
+---
+title: "Numerics of zero-finding and optimization"
+author: "Daniel Kaplan"
+date: "11/20/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mosaic)
+library(mosaicCalc)
+library(ggplot2)
+```
+
+This App is designed to help you develop an intuition about numerical methods for finding zeros of functions and for finding extreme values (maxes and mins).
+
+The graph shows the domain of a function. The function itself **is not plotted** because doing so would solve the problem by the *method of exhaustion*. Instead, you can click wherever you like in the domain and the function value at that input will be displayed by a black dot.
+
+**Method 1** can be used for finding zeros or for finding maxima and minima. Make an initial guess about $x$ and then another, nearby guess. The pattern may suggest how to make further guesses that move toward a zero of the function or to an extremum.
+
+**Method 2** evaluates not just the value of the function at each guess, but also the sign of the derivative, which tells you whether the function has a positive or negative slope at your guess. This can help you move your guess toward a value that produces a zero, or toward a value that produces an extreme value.
+
+**Method 3** uses the function value and the value of the derivative at your guessed $x$ to create an order-one polynomial--a straight-line function---that matches your function at the point $x$. Effectively, this tells you not just the sign of the derivative (as in Method 2) but also its magnitude. This is particularly useful for finding zeros, since you can easily trace the linear approximation to where it crosses zero. Since the algebra of finding the zero of a linear function is trivial, we've marked the point for you with an x.
+
+You can also use Method 3 to find extreme points. The idea is that when the derivative is very small, you may well be very near an extreme value.
+
+**Method 4** finds the order-two polynomial that approximates the function at your guess $x$. The algebra of finding the extreme point of a quadratic is simple, so we do it for you and plot a vertical line at the extremum. Thus, this method gives a hint not only whether to move left or right, but how far to move.
+
+The function you work with is randomly generated. It will tend to flatten out to the extreme left and right of the domain, so sometimes you may chase a zero off to the limits of the plot: a wild goose chase. 
+
+Sometimes the numerical methods give a very good hint of how to revise your guess. Sometimes the methods send you astray. In order to help you get a sense for why this happens, we provide you with "training wheels" in the form of a graph of the function itself. (In real zero-finding and optimization problems, you don't have this: it amounts to the method of exhaustion.)
+
+You can start over with a new, randomly generated function whenever you like. Some will be easy, some hard. 
+
+
+
+```{r echo=FALSE}
+
+actionButton("restart", "Start again with a new function")
+checkboxInput("show_fun", "Use training wheels.")
+radioButtons("hint_level", "Method:",
+             choices = c(
+               "1) Function value" = 1,
+               "2) Left or right"  = 2,
+               "3) Local linear function" = 3,
+               "4) Local quadratic function" = 4
+               )
+)
+plotOutput("graphics", click=clickOpts("xstar"))
+```
+
+```{r echo=FALSE}
+our_fun <- reactiveVal(rfun(~ x))
+guesses <- reactiveVal(numeric(0))
+dx_fun  <- reactiveVal(D(our_fun()(x) ~ x))
+dxx_fun <- reactiveVal(D(our_fun()(x) ~ x + x))
+fun_vals <- reactiveValues(x = 0, y = 0)
+ylimits <- reactiveVal(0)
+
+observeEvent(input$xstar, {
+  guesses(c(guesses(), input$xstar$x))
+})
+
+observeEvent(
+  input$restart, 
+  {
+    fun <- rfun(~ x)
+    our_fun(fun)
+    dx_fun(D(fun(x) ~ x))
+    dxx_fun(D(fun(x) ~ x + x))
+    fun_vals$x <- x <-  seq(-7.5, 7.5, length = 500)
+    fun_vals$y <- fun(x)
+    ylimits(extendrange(fun_vals$y))
+    guesses(numeric(0))
+  }, 
+  ignoreNULL = FALSE,
+  ignoreInit = FALSE)
+
+output$graphics <- renderPlot({
+  Dat <- data.frame(x = fun_vals$x, y = fun_vals$y)
+  P <- ggplot(data = Dat, mapping = aes(x=x, y=y))
+  
+  if (input$show_fun) {
+    P <- P + geom_line()
+  } else {
+    P <- P + geom_blank()
+  }
+  
+  
+  if (length(guesses()) > 0) {
+    Info <- data.frame(x = guesses(), y = our_fun()(guesses()))
+    Info$n <- as.character(1:nrow(Info))
+    P <- P + geom_point(data = Info) #+
+      #geom_text(mapping = aes(x=x, y=y, label =  n), vjust = 1, hjust = 1)
+  }
+  
+  if (length(guesses()) > 0) {
+    xx <- guesses()[length(guesses())]
+    yy <- our_fun()(xx)
+    xx_end <- xx + sign(dx_fun()(xx)) + 0.2
+    if (input$hint_level == 2)
+      P <- P + geom_segment(x=xx, xend=xx_end, y=yy, yend=yy, arrow = arrow())
+    fslope <- dx_fun()(xx)
+    ffslope <- dxx_fun()(xx)
+    y_intercept <- yy - xx*fslope
+    where_zero <- xx - yy/fslope
+    if (input$hint_level == 3) {
+      P <- P + 
+        geom_abline(slope = fslope, intercept = y_intercept, color="blue") +
+        geom_point(x = where_zero, y = 0, shape = "x", color="blue", size=10)
+    }
+    parab <- data.frame(x = seq(-7.5, 7.5, length=100))
+    
+    parab$y <- yy + fslope*(parab$x-xx) + ffslope*(parab$x-xx)^2 / 2
+
+    if (input$hint_level == 4) {
+      where <- xx - fslope/ffslope
+      P <- P + geom_line(data = parab, aes(x=x, y=y), color="blue") +
+        geom_vline(xintercept = where, color="blue")
+    }
+  }
+  
+  P + lims(y = ylimits(), x = c(-7.5, 7.5))
+})
+
+
+```
+
+<!--
+
+One of the most common problems in mathematics relates to finding inputs for which a function's output goes to zero. Here are two situations in which this zero-finding problem arise:
+
+1. Inverting a function. We have a function $f(x)$ for which we know how to apply the function to an input in order to get an output. But sometimes you know the output, say $B = f(x^\star)$ and you want to find an input $x^\star$ which will generate the known output. This inversion problem can be translated to a zero-finding problem. Just define a new function $g(x)$ and find the zeros of that function. The function $g(x)$ is simple:
+$$g(x) \equiv f(x) - B$$
+
+2. Finding the argmax and max of a function $h(x)$. Here a powerful solution technique is to find the derivative $\partial_x h(x)$. The location of the input $x^\star$  that generates the maximum output, can be calculated by finding zeros of $\partial_x h(x)$. 
+
+-->
